@@ -74,7 +74,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:var(--glass);bac
 .avatar-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--gold),var(--blue));font-size:3.5rem;font-weight:700;color:var(--navy)}
 .avatar-ring{position:absolute;inset:-8px;border-radius:50%;border:1px solid var(--border)}
 .hero-right{flex:1;min-width:0}
-.hero-name{font-size:clamp(2rem,5vw,3.2rem);font-weight:800;margin-bottom:4px;background:linear-gradient(135deg,var(--gold),var(--gold-light),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-name{font-size:clamp(2rem,5vw,3.2rem);font-weight:800;margin-bottom:4px;background-image:linear-gradient(135deg,var(--gold),var(--gold-light),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .hero-sub{font-size:1.05rem;color:var(--text2);margin-bottom:18px}
 .hero-desc{max-width:640px;margin:0 0 24px;color:var(--text2);font-size:.95rem;line-height:1.8}
 .badge-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:28px}
@@ -89,7 +89,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:var(--glass);bac
 
 /* ===== Section Common ===== */
 section{padding:80px 24px;position:relative;z-index:1}
-.section-title{font-size:1.8rem;font-weight:800;text-align:center;margin-bottom:12px;background:linear-gradient(135deg,var(--gold),var(--gold-light),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.section-title{font-size:1.8rem;font-weight:800;text-align:center;margin-bottom:12px;background-image:linear-gradient(135deg,var(--gold),var(--gold-light),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .section-desc{text-align:center;color:var(--text2);margin-bottom:48px;font-size:.92rem}
 .container{max-width:1100px;margin:0 auto}
 
@@ -348,12 +348,17 @@ html.lowq #warpCanvas,html.lowq .cover-fallback .cf-name,html.lowq .cover-fallba
 html.lowq .cover-bg{transform:none!important}
 html.lowq #hero.hero-in .avatar-wrap::after{animation:none!important;opacity:0!important}
 
+/* 老内核兜底：不支持 background-clip:text 时，渐变标题退回实心金色，杜绝“文字消失” */
+@supports not ((-webkit-background-clip:text) or (background-clip:text)){
+  .hero-name,.section-title,.end-title,.cover-fallback .cf-name{-webkit-text-fill-color:var(--gold)!important;color:var(--gold)!important;background-image:none!important}
+}
+
 /* ===== End Page ===== */
 .end-page{min-height:100vh;display:flex;align-items:center;justify-content:center;gap:clamp(32px,5vw,72px);text-align:left;padding:96px 5vw;position:relative;z-index:1;overflow:hidden}
 .end-page::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 24% 72%,rgba(107,163,190,0.10) 0%,transparent 55%),radial-gradient(ellipse at 76% 32%,rgba(201,169,110,0.08) 0%,transparent 55%);pointer-events:none}
 .end-page>*{position:relative;z-index:1}
 .end-inner{max-width:min(560px,52%);width:auto;text-align:left}
-.end-title{font-size:clamp(1.5rem,3.5vw,2.4rem);font-weight:800;background:linear-gradient(135deg,var(--gold),var(--gold-light),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:20px;line-height:1.3}
+.end-title{font-size:clamp(1.5rem,3.5vw,2.4rem);font-weight:800;background-image:linear-gradient(135deg,var(--gold),var(--gold-light),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:20px;line-height:1.3}
 .end-sub{color:var(--text);font-size:1rem;margin-bottom:32px;opacity:.95}
 .end-contact{display:flex;flex-direction:column;gap:14px;flex-wrap:wrap;justify-content:flex-start}
 .end-photo-wrap{position:relative;flex:0 0 auto;width:clamp(240px,26vw,380px);aspect-ratio:4/5;perspective:900px;isolation:isolate}
@@ -516,10 +521,10 @@ nav.nav-transparent .btn-icon:hover{border-color:rgba(248,245,255,0.4);color:#ff
 @keyframes shinySweep{0%{background-position:150% center}100%{background-position:-50% center}}
 
 /* [8] GlitchText */
-.glitch{position:relative;display:inline-block;white-space:nowrap}
-.glitch::before,.glitch::after{content:attr(data-text);position:absolute;top:0;left:0;width:100%;background:linear-gradient(135deg,var(--gold),var(--gold-light),var(--blue));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;opacity:0;pointer-events:none}
-.glitch::before{left:3px;filter:drop-shadow(-2px 0 var(--blue))}
-.glitch::after{left:-3px;filter:drop-shadow(2px 0 var(--gold))}
+.glitch{position:relative;white-space:nowrap}
+.glitch::before,.glitch::after{content:attr(data-text);position:absolute;top:0;left:50%;width:auto;transform:translateX(-50%);background-image:linear-gradient(135deg,var(--gold),var(--gold-light),var(--blue));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;opacity:0;pointer-events:none}
+.glitch::before{margin-left:3px;filter:drop-shadow(-2px 0 var(--blue))}
+.glitch::after{margin-left:-3px;filter:drop-shadow(2px 0 var(--gold))}
 .glitch:hover::before{opacity:1;animation:glitchBand 1.1s linear infinite alternate-reverse}
 .glitch:hover::after{opacity:1;animation:glitchBand 1.7s linear infinite alternate-reverse}
 @keyframes glitchBand{0%{clip-path:inset(20% 0 50% 0)}10%{clip-path:inset(15% 0 55% 0)}20%{clip-path:inset(30% 0 40% 0)}30%{clip-path:inset(10% 0 60% 0)}40%{clip-path:inset(25% 0 35% 0)}50%{clip-path:inset(40% 0 20% 0)}60%{clip-path:inset(15% 0 55% 0)}70%{clip-path:inset(30% 0 40% 0)}80%{clip-path:inset(20% 0 50% 0)}90%{clip-path:inset(10% 0 60% 0)}100%{clip-path:inset(25% 0 35% 0)}}
@@ -653,7 +658,7 @@ nav.nav-transparent .btn-icon:hover{border-color:rgba(248,245,255,0.4);color:#ff
 <!-- ===== Experience ===== -->
 <section id="experience">
   <div class="container">
-    <h2 class="section-title fade-in"><span class="glitch" data-text="校园经历">校园经历</span></h2>
+    <h2 class="section-title fade-in glitch" data-text="校园经历">校园经历</h2>
     <p class="section-desc fade-in shiny">高中到大学做过的事，分在下面四个标签页里</p>
     <div class="magnet-lines" id="magnetLines" aria-hidden="true"></div>
     <div class="tab-bar" role="tablist" aria-label="经历分类">
@@ -759,7 +764,7 @@ nav.nav-transparent .btn-icon:hover{border-color:rgba(248,245,255,0.4);color:#ff
 <!-- ===== Projects ===== -->
 <section id="projects">
   <div class="container">
-    <h2 class="section-title fade-in"><span class="glitch" data-text="项目经历">项目经历</span></h2>
+    <h2 class="section-title fade-in glitch" data-text="项目经历">项目经历</h2>
     <p class="section-desc fade-in shiny">三件自己折腾出来的东西，成品都能点开看</p>
     <div class="project-grid">
 
@@ -881,7 +886,7 @@ nav.nav-transparent .btn-icon:hover{border-color:rgba(248,245,255,0.4);color:#ff
 <section id="skills">
   <div class="light-rays-wrap" id="lightRays"></div>
   <div class="container">
-    <h2 class="section-title fade-in"><span class="glitch" data-text="技能与工具">技能与工具</span></h2>
+    <h2 class="section-title fade-in glitch" data-text="技能与工具">技能与工具</h2>
     <p class="section-desc fade-in shiny">用过的工具，以及目前大概到什么水平</p>
     <div class="skills-grid">
       <div class="skill-category fade-in spotlight">
@@ -946,7 +951,7 @@ nav.nav-transparent .btn-icon:hover{border-color:rgba(248,245,255,0.4);color:#ff
 <!-- ===== Education ===== -->
 <section id="education">
   <div class="container">
-    <h2 class="section-title fade-in"><span class="glitch" data-text="教育背景">教育背景</span></h2>
+    <h2 class="section-title fade-in glitch" data-text="教育背景">教育背景</h2>
     <p class="section-desc fade-in shiny">学术基础与成长轨迹</p>
     <div class="edu-card fade-in spotlight">
       <h3>中央民族大学</h3>
@@ -966,7 +971,7 @@ nav.nav-transparent .btn-icon:hover{border-color:rgba(248,245,255,0.4);color:#ff
 <!-- ===== Hobbies ===== -->
 <section id="hobbies">
   <div class="container">
-    <h2 class="section-title fade-in"><span class="glitch" data-text="特长与兴趣">特长与兴趣</span></h2>
+    <h2 class="section-title fade-in glitch" data-text="特长与兴趣">特长与兴趣</h2>
     <p class="section-desc fade-in shiny">技术之外，也有多彩生活</p>
     <div class="hobbies-grid">
       <div class="hobby-card fade-in spotlight">
@@ -1009,7 +1014,7 @@ nav.nav-transparent .btn-icon:hover{border-color:rgba(248,245,255,0.4);color:#ff
 <!-- ===== Certificates ===== -->
 <section id="certificates">
   <div class="container">
-    <h2 class="section-title fade-in"><span class="glitch" data-text="获奖与证书">获奖与证书</span></h2>
+    <h2 class="section-title fade-in glitch" data-text="获奖与证书">获奖与证书</h2>
     <p class="section-desc fade-in shiny">证书说明不了什么，但至少证明那段时间没闲着。点开能看原件。</p>
     <div class="cert-gallery" id="certGallery">
       <div class="cert-highlight fade-in" style="grid-column:1/-1">
@@ -1039,7 +1044,7 @@ nav.nav-transparent .btn-icon:hover{border-color:rgba(248,245,255,0.4);color:#ff
 <!-- ===== End Page ===== -->
 <section class="end-page" id="contact">
   <div class="end-inner">
-    <h2 class="end-title"><span class="glitch" data-text="如果有合适的机会，欢迎聊聊">如果有合适的机会，欢迎聊聊</span></h2>
+    <h2 class="end-title glitch" data-text="如果有合适的机会，欢迎聊聊">如果有合适的机会，欢迎聊聊</h2>
     <p class="end-sub">数据科学与大数据技术在读 · 广州人</p>
     <div class="end-contact">
       <div class="magnet"><div class="star-border"><span class="sb-glow sb-t"></span><span class="sb-glow sb-b"></span><button class="btn-call" type="button" aria-label="复制邮箱地址" onclick="copyEmail(this)">&#9993; 18924106805@189.cn</button></div></div>
