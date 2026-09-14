@@ -306,6 +306,9 @@ footer a{color:var(--gold)}
 .cover-bg{position:absolute;inset:0;background-image:url('assets/cover-bg.webp');background-size:cover;background-position:center;filter:saturate(1.2) contrast(1.05)}
 .cover-bg::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 74% 38% at 60% 52%,rgba(255,176,96,.32) 0%,rgba(255,120,50,.13) 36%,transparent 68%);mix-blend-mode:screen;pointer-events:none}
 .cover-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,96,32,.38) 0%,rgba(255,150,56,.24) 30%,rgba(214,72,72,.2) 56%,rgba(72,26,64,.32) 76%,rgba(6,10,22,.66) 100%);mix-blend-mode:soft-light;pointer-events:none}
+/* ===== 稳定态：照片火烧云缓慢蠕动（JS 首帧画成功后接管照片，失败则沿用上面的 CSS 照片）===== */
+.cover-warp{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+html.photo-warp .cover-bg{background-image:none}
 /* ===== 封面点火：夜空幕 + 太阳光晕 + 峰值泛光（默认全透明，无 JS 时天空不变） ===== */
 .cover-veil{position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(180deg,#0a1226,#060b18);opacity:var(--veil,0)}
 .cover-bloom{position:absolute;left:var(--sun-x,60%);top:var(--sun-y,43%);width:120vmax;height:120vmax;z-index:4;pointer-events:none;mix-blend-mode:screen;opacity:var(--bloom-a,0);transform:translate(-50%,-50%) scale(var(--bloom,0));background-image:radial-gradient(circle at 50% 50%,rgba(255,196,120,.75) 0%,rgba(255,124,52,.38) 30%,rgba(255,86,40,0) 62%)}
@@ -619,7 +622,7 @@ nav.nav-transparent .btn-icon:hover{border-color:rgba(248,245,255,0.4);color:#ff
 
 <!-- ===== Cover Page ===== -->
 <section class="cover-page" id="cover">
-  <div class="cover-bg"></div>
+  <div class="cover-bg"><canvas class="cover-warp" aria-hidden="true"></canvas></div>
   <div class="cover-veil" aria-hidden="true"></div>
   <canvas id="coverSky" aria-hidden="true"></canvas>
   <canvas id="coverClouds" aria-hidden="true"></canvas>
@@ -1765,6 +1768,8 @@ syncNav();
   var embers = [], ash = [];
   var IG_DEFAULT = { front: 1.25, ignite: 0, boost: 0 };
   function igBoost() { var s = window.__coverIgnite || IG_DEFAULT; return s.boost || 0; }
+  var FLOW_DEFAULT = { settle: 1, wind: 0, pulse: 0.5 };
+  function coverFlow() { return window.__coverFlow || FLOW_DEFAULT; }
 
   function makeEmber(atHorizon) {
     var boost = igBoost();
@@ -1809,6 +1814,7 @@ syncNav();
       e.vx += Math.sin(e.life * 0.7 + e.phase) * 7 * dt * dpr;
       e.vy -= 3.0 * dt * dpr;
       e.x += e.vx * dt; e.y += e.vy * dt;
+      e.x += coverFlow().wind * 22 * dpr * dt * coverFlow().settle;   // 与火烧云同一股缓慢横风
     }
     for (var j = 0; j < ash.length; j++) {
       var a = ash[j];
@@ -1833,7 +1839,8 @@ syncNav();
       var fade = p < 0.18 ? p / 0.18 : (1 - Math.pow((p - 0.18) / 0.82, 1.6));
       if (fade <= 0) continue;
       var flick = 0.72 + 0.28 * Math.sin(e.life * e.flick + e.phase);
-      var al = Math.max(0, Math.min(1, fade * flick * (1 + 0.35 * igBoost())));
+      var br = 1 + 0.18 * coverFlow().pulse;                          // 云带变亮时火星一起亮
+      var al = Math.max(0, Math.min(1, fade * flick * (1 + 0.35 * igBoost()) * br));
       var r = e.r * (1 - p * 0.55) * 5.5;
       var g = ctx.createRadialGradient(e.x, e.y, 0, e.x, e.y, r);
       g.addColorStop(0, 'rgba(' + e.color + ',' + (al * 0.9) + ')');
@@ -1841,7 +1848,7 @@ syncNav();
       g.addColorStop(1, 'rgba(' + e.color + ',0)');
       ctx.fillStyle = g;
       ctx.beginPath(); ctx.arc(e.x, e.y, r, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = 'rgba(255,244,214,' + (al * 0.8) + ')';
+      ctx.fillStyle = 'rgba(255,244,214,' + Math.min(1, al * 0.8 * (1 + 0.12 * coverFlow().pulse)).toFixed(3) + ')';
       ctx.beginPath(); ctx.arc(e.x, e.y, e.r * 0.6, 0, Math.PI * 2); ctx.fill();
     }
     ctx.globalCompositeOperation = 'source-over';
@@ -1879,6 +1886,133 @@ syncNav();
   start();
 })();
 
+// ===== 照片火烧云缓慢蠕动（稳定态淡入；任何失败都回退 CSS 静态照片）=====
+(function() {
+  var canvas = document.querySelector('.cover-warp');
+  var host = document.querySelector('.cover-bg');
+  if (!canvas || !host) return;
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduceMotion) return;                 // 低动效：完全沿用 CSS 静态照片
+  var ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  var img = new Image();
+  var ready = false, armedAt = 0, armTimer = 0, raf = 0, visible = true, lastDraw = 0;
+  var W = 2, H = 2, scale = 1, bandY0 = 0, bandY1 = 0;
+  var BASE_AMP = 5.5, RAMP_MS = 1600, FRAME_MS = 1000 / 30, STRIPS = 44;
+  var t0 = performance.now();
+
+  function smoothstep(a, b, x) {
+    var p = (x - a) / (b - a);
+    p = p < 0 ? 0 : (p > 1 ? 1 : p);
+    return p * p * (3 - 2 * p);
+  }
+  // 与 #coverSky 完全一致的地平线换算：形变带始终压在云带上，不碰树枝与建筑
+  function horizonTop() {
+    var aspect = window.innerWidth / Math.max(1, window.innerHeight);
+    var imgAR = 1500 / 1200, hz = 0.35;
+    if (aspect > imgAR) { var vis = imgAR / aspect, y0 = (1 - vis) / 2; hz = (hz - y0) / vis; }
+    return 1 - hz;
+  }
+
+  function resize() {
+    scale = Math.min(window.devicePixelRatio || 1, 2);
+    W = Math.max(2, Math.round(window.innerWidth * scale));
+    H = Math.max(2, Math.round(window.innerHeight * scale));
+    canvas.width = W; canvas.height = H;
+    var yH = horizonTop();
+    bandY0 = Math.max(0, Math.round((yH - 0.43) * H));
+    bandY1 = Math.min(H, Math.round((yH + 0.015) * H));
+  }
+
+  function srcRect() {
+    var ia = img.naturalWidth / img.naturalHeight, va = W / H;
+    var sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight;
+    if (ia > va) { sw = img.naturalHeight * va; sx = (img.naturalWidth - sw) / 2; }
+    else { sh = img.naturalWidth / va; sy = (img.naturalHeight - sh) / 2; }
+    return { sx: sx, sy: sy, sw: sw, sh: sh };
+  }
+
+  function paintStatic() {
+    var r = srcRect();
+    ctx.clearRect(0, 0, W, H);
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, r.sx, r.sy, r.sw, r.sh, 0, 0, W, H);
+  }
+
+  // 只重画天空带：44 条横向条带按行做缓慢起伏，带外保留静态像素，避免接缝
+  function paintWave(t, k) {
+    var r = srcRect();
+    var yH = horizonTop();
+    var yTop = yH - 0.43, yPeak = yH - 0.24, yFade = yH + 0.015;
+    var ampK = (window.innerWidth < 900 ? 0.6 : 1) * (window.__LOWQ ? 0.5 : 1);
+    var amp = BASE_AMP * ampK * scale * k;
+    var y0 = bandY0, y1 = bandY1, step = (y1 - y0) / STRIPS;
+    ctx.clearRect(0, y0, W, y1 - y0);
+    ctx.imageSmoothingQuality = 'high';
+    for (var i = 0; i < STRIPS; i++) {
+      var y = y0 + i * step;
+      var yn = y / H;
+      var a = amp * smoothstep(yTop, yPeak, yn) * (1 - smoothstep(yPeak + 0.14, yFade, yn));
+      var off = a * (0.62 * Math.sin(t * 0.5712 + yn * 5.4) + 0.38 * Math.sin(t * 0.3696 + yn * 2.1));
+      var sy = r.sy + (y / H) * r.sh, sh = (step / H) * r.sh;
+      ctx.drawImage(img, r.sx, sy, r.sw, sh, 0, y + off - 1.5 * scale, W, step + 3 * scale);
+    }
+  }
+
+  function rampK(now) {
+    if (!armedAt) return 0;
+    return smoothstep(0, 1, (now - armedAt) / RAMP_MS);
+  }
+
+  function frame(now) {
+    if (!ready || !visible || document.hidden) { raf = 0; return; }
+    var gap = window.__LOWQ ? 49 : FRAME_MS - 1.5;
+    if (now - lastDraw >= gap) {
+      lastDraw = now;
+      var k = rampK(now);
+      if (k > 0.002) paintWave(now * 0.001, k);   // k=0 时保留静态帧不重画
+    }
+    raf = requestAnimationFrame(frame);
+  }
+  function start() { if (ready && !raf && visible && !document.hidden) { lastDraw = 0; raf = requestAnimationFrame(frame); } }
+
+  function arm() {
+    if (armedAt) return;
+    armedAt = performance.now();
+    start();
+  }
+  function pollSettle() {
+    if (armedAt) { window.clearInterval(armTimer); return; }
+    var root = document.documentElement;
+    var ig = window.__coverIgnite;
+    var introOver = !root.classList.contains('intro') || root.classList.contains('intro-done');
+    if (introOver && (!ig || (!ig.active && ig.front >= 1.24))) { window.clearInterval(armTimer); arm(); return; }
+    if (performance.now() - t0 > 12000) { window.clearInterval(armTimer); arm(); }   // 兜底
+  }
+
+  img.onload = function() {
+    try { resize(); paintStatic(); } catch (e) { return; }   // 取图失败则沿用 CSS 照片
+    ready = true;
+    document.documentElement.classList.add('photo-warp');
+    armTimer = window.setInterval(pollSettle, 200);
+    pollSettle();
+  };
+  img.onerror = function() { ready = false; };
+  img.src = 'assets/cover-bg.webp';
+
+  window.addEventListener('resize', function() {
+    if (!ready) return;
+    resize(); paintStatic();
+    if (armedAt) lastDraw = 0;
+  });
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function(en) { visible = en[0].isIntersecting; if (visible) start(); },
+      { threshold: 0 }).observe(document.getElementById('cover') || canvas);
+  }
+  document.addEventListener('visibilitychange', function() { if (!document.hidden) start(); });
+})();
+
 // ===== Cover Sky (WebGL 程序化火烧云，原生 WebGL，零依赖) =====
 (function() {
   var canvas = document.getElementById('coverSky');
@@ -1903,6 +2037,7 @@ syncNav();
     'uniform float uIntensity;',
     'uniform float uHorizon;',
     'uniform vec2 uWarp;',
+    'uniform vec2 uSway;',
     'uniform float uFront;',
     'uniform float uIgnite;',
     'varying vec2 vUv;',
@@ -1925,6 +2060,7 @@ syncNav();
     '  suv.x += sin(uv.y * 40.0 + t * 1.6) * 0.0022 * nearH * (1.0 + 2.4 * uIgnite);',
     '  vec2 p = vec2(suv.x * aspect * 1.15 + t * 0.052, suv.y * 3.30 - t * 0.016);',
     '  p += iMouse * 0.06;',
+    '  p += uSway;',
     '  p.y -= 0.18 * uIgnite * nearH;',
     '  float w = fbm3(p * 0.62 + 3.1 + uWarp);',
     '  vec2 q = p + vec2(w * 1.5, fbm3(p + vec2(4.2,1.3)) * 1.15);',
@@ -1992,10 +2128,14 @@ syncNav();
   function U(n) { return gl.getUniformLocation(prog, n); }
   var uTime = U('iTime'), uRes = U('iResolution'), uMouse = U('iMouse'),
       uIntensity = U('uIntensity'), uHorizon = U('uHorizon'),
-      uWarp = U('uWarp'), uFront = U('uFront'), uIgnite = U('uIgnite');
+      uWarp = U('uWarp'), uSway = U('uSway'), uFront = U('uFront'), uIgnite = U('uIgnite');
 
   var mouse = { x: 0.5, y: 0.5 }, smooth = { x: 0.5, y: 0.5 };
   var W = 2, H = 2, raf = 0, visible = true, lastDraw = 0, baseIntensity = 1.05;
+  // 与火星层共享的“风 / 明暗脉冲 / 稳定度”
+  var flow = { settle: 1, wind: 0, pulse: 0.5 };
+  window.__coverFlow = flow;
+  var motionOK = !reduceMotion;
   var FRAME_MS = 1000 / 30;
 
   function horizonFor(aspect) {
@@ -2021,10 +2161,22 @@ syncNav();
     smooth.x = smooth.x * 0.93 + mouse.x * 0.07;
     smooth.y = smooth.y * 0.93 + mouse.y * 0.07;
     if (uMouse) gl.uniform2f(uMouse, smooth.x, smooth.y);
-    if (uIntensity) gl.uniform1f(uIntensity, baseIntensity * (1 + 0.05 * Math.sin(t * 0.37)));
-    if (uWarp) gl.uniform2f(uWarp, Math.sin(t * 0.11) * 0.22, Math.cos(t * 0.09) * 0.16);
     var ig = window.__coverIgnite;
-    if (uFront) gl.uniform1f(uFront, ig ? ig.front : 1.25);
+    var fr = ig ? ig.front : 1.25;
+    // 稳定度：点火期间平滑归零，火线铺满后淡回 1，稳定态恒为 1（无跳变）
+    var st = (fr - 0.55) / 0.70;
+    st = st < 0 ? 0 : (st > 1 ? 1 : st);
+    st = st * st * (3 - 2 * st);
+    if (!motionOK) st = 0;
+    if (uIntensity) gl.uniform1f(uIntensity, baseIntensity * (1 + 0.05 * Math.sin(t * 0.37) + st * 0.055 * Math.sin(t * 0.286 + 0.9)));
+    if (uWarp) gl.uniform2f(uWarp, Math.sin(t * 0.11) * 0.26, Math.cos(t * 0.09) * 0.19);
+    if (uSway) gl.uniform2f(uSway,
+      st * (0.42 * Math.sin(t * 0.482) + 0.22 * Math.sin(t * 0.271 + 1.7)),
+      st * (0.36 * Math.cos(t * 0.371) + 0.20 * Math.cos(t * 0.213 + 0.6)));
+    flow.settle = st;
+    flow.wind = 0.45 * Math.sin(t * 0.13) + 0.25 * Math.sin(t * 0.071 + 1.1);
+    flow.pulse = 0.5 + 0.5 * Math.sin(t * 0.286 + 0.9);
+    if (uFront) gl.uniform1f(uFront, fr);
     if (uIgnite) gl.uniform1f(uIgnite, ig ? ig.ignite : 0);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
