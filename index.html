@@ -306,16 +306,20 @@ footer a{color:var(--gold)}
 .cover-bg{position:absolute;inset:0;background-image:url('assets/cover-bg.webp');background-size:cover;background-position:center;filter:saturate(1.2) contrast(1.05)}
 .cover-bg::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 74% 38% at 60% 52%,rgba(255,176,96,.32) 0%,rgba(255,120,50,.13) 36%,transparent 68%);mix-blend-mode:screen;pointer-events:none}
 .cover-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,96,32,.38) 0%,rgba(255,150,56,.24) 30%,rgba(214,72,72,.2) 56%,rgba(72,26,64,.32) 76%,rgba(6,10,22,.66) 100%);mix-blend-mode:soft-light;pointer-events:none}
-#coverSky{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;mix-blend-mode:screen}
-#coverClouds{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;mix-blend-mode:screen}
-.cover-page::after{content:'';position:absolute;inset:0;z-index:3;pointer-events:none;background:radial-gradient(ellipse 70% 55% at 50% 50%,rgba(6,12,24,.5) 0%,rgba(6,12,24,.22) 45%,transparent 72%)}
-#warpCanvas{position:relative;z-index:4;width:100%;max-width:900px;height:clamp(200px,42vw,480px)}
-.cover-fallback{position:absolute;z-index:4;width:100%;text-align:center;padding:0 24px;color:#F8F5FF;text-shadow:0 2px 30px rgba(6,12,24,.7)}
+/* ===== 封面点火：夜空幕 + 太阳光晕 + 峰值泛光（默认全透明，无 JS 时天空不变） ===== */
+.cover-veil{position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(180deg,#0a1226,#060b18);opacity:var(--veil,0)}
+.cover-bloom{position:absolute;left:var(--sun-x,60%);top:var(--sun-y,43%);width:120vmax;height:120vmax;z-index:4;pointer-events:none;mix-blend-mode:screen;opacity:var(--bloom-a,0);transform:translate(-50%,-50%) scale(var(--bloom,0));background-image:radial-gradient(circle at 50% 50%,rgba(255,196,120,.75) 0%,rgba(255,124,52,.38) 30%,rgba(255,86,40,0) 62%)}
+.cover-flash{position:absolute;inset:0;z-index:5;pointer-events:none;mix-blend-mode:screen;opacity:var(--flash,0);background-image:radial-gradient(ellipse 90% 70% at 60% 43%,rgba(255,186,110,.55) 0%,rgba(255,120,60,.18) 45%,transparent 75%)}
+#coverSky{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;mix-blend-mode:screen}
+#coverClouds{position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none;mix-blend-mode:screen}
+.cover-page::after{content:'';position:absolute;inset:0;z-index:6;pointer-events:none;background:radial-gradient(ellipse 70% 55% at 50% 50%,rgba(6,12,24,.5) 0%,rgba(6,12,24,.22) 45%,transparent 72%)}
+#warpCanvas{position:relative;z-index:7;width:100%;max-width:900px;height:clamp(200px,42vw,480px)}
+.cover-fallback{position:absolute;z-index:7;width:100%;text-align:center;padding:0 24px;color:#F8F5FF;text-shadow:0 2px 30px rgba(6,12,24,.7)}
 .cover-fallback .cf-name{display:block;font-size:clamp(2.4rem,12vw,8.1rem);font-weight:800;letter-spacing:.04em;line-height:1.15;text-shadow:none;color:transparent;background-image:linear-gradient(180deg,#FFFDF6 0%,#F0D49E 45%,#C9A96E 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 4px 18px rgba(6,12,24,.72))}
 .cover-fallback .cf-sub{display:block;margin-top:14px;font-size:clamp(.82rem,2.6vw,1.05rem);letter-spacing:.18em;font-weight:600;color:#E8D5A3;opacity:.9}
 .cover-fallback{transition:opacity .4s ease,visibility 0s linear .4s}
 body.warp-ready .cover-fallback{opacity:0;visibility:hidden}
-.cover-scroll-hint{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);z-index:5;color:rgba(248,245,255,0.6);font-size:.85rem;letter-spacing:2px;animation:scrollHint 2s ease-in-out infinite}
+.cover-scroll-hint{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);z-index:8;color:rgba(248,245,255,0.6);font-size:.85rem;letter-spacing:2px;animation:scrollHint 2s ease-in-out infinite}
 @keyframes scrollHint{0%,100%{transform:translateX(-50%) translateY(0);opacity:.6}50%{transform:translateX(-50%) translateY(8px);opacity:1}}
 
 /* ===== Intro Curtain + Cover & Hero Entrance ===== */
@@ -346,6 +350,7 @@ html.intro #hero.hero-in .avatar-wrap::after{animation:ringSweep .9s cubic-bezie
 @keyframes ringSweep{0%{transform:rotate(0);opacity:0}15%{opacity:1}75%{opacity:.9}100%{transform:rotate(360deg);opacity:0}}
 html.lowq #warpCanvas,html.lowq .cover-fallback .cf-name,html.lowq .cover-fallback .cf-sub{clip-path:none!important;animation-name:coverFade!important}
 html.lowq .cover-bg{transform:none!important}
+html.lowq .cover-flash,html.lowq .cover-bloom{display:none!important}
 html.lowq #hero.hero-in .avatar-wrap::after{animation:none!important;opacity:0!important}
 
 /* 老内核兜底：不支持 background-clip:text 时，渐变标题退回实心金色，杜绝“文字消失” */
@@ -442,6 +447,7 @@ nav.nav-transparent .btn-icon:hover{border-color:rgba(248,245,255,0.4);color:#ff
   #hero .avatar-wrap,#hero .hero-name{opacity:1!important;transform:none!important;animation:none!important}
   .avatar-wrap::after{animation:none!important;opacity:0!important}
   .cover-bg{transform:none!important;opacity:1!important}
+  .cover-veil,.cover-bloom,.cover-flash{display:none!important}
 }
 
 /* ===== Print ===== */
@@ -451,7 +457,7 @@ nav.nav-transparent .btn-icon:hover{border-color:rgba(248,245,255,0.4);color:#ff
   /* 渐变文字在打印时会因 background:transparent 而消失，必须显式恢复填充色 */
   .section-title,.hero-name,.end-title,.cert-highlight-title,h1,h2,h3{-webkit-text-fill-color:#1a1a1a!important;background:none!important;color:#1a1a1a!important}
   body{font-size:11.5pt;line-height:1.5}
-  nav,.nav-mobile,.nav-toggle,.back-top,.lightbox,.btn-icon,.tab-bar,#starfield,#liquidEther,.tank-game-overlay,.btn-play,.cover-page,.end-page,.bgm-indicator,.audio-player,.project-video-wrap .play-overlay,.project-img-caption,.video-note-touch,#copyEmailBtn,.click-spark-canvas,.light-rays-wrap,#coverSky,.photo-fx,.photo-aura,.photo-sheen,.glow-edge::after,.glow-edge>.edge-light,.glitch::before,.glitch::after,.sb-glow,.magnet-lines,.glare::after,.intro-curtain{display:none!important}
+  nav,.nav-mobile,.nav-toggle,.back-top,.lightbox,.btn-icon,.tab-bar,#starfield,#liquidEther,.tank-game-overlay,.btn-play,.cover-page,.end-page,.bgm-indicator,.audio-player,.project-video-wrap .play-overlay,.project-img-caption,.video-note-touch,#copyEmailBtn,.click-spark-canvas,.light-rays-wrap,#coverSky,.photo-fx,.photo-aura,.photo-sheen,.glow-edge::after,.glow-edge>.edge-light,.glitch::before,.glitch::after,.sb-glow,.magnet-lines,.glare::after,.intro-curtain,.cover-veil,.cover-bloom,.cover-flash{display:none!important}
   .print-only{display:block!important}
   .hero{min-height:auto;padding:12pt 0 6pt}
   .hero::before{display:none}
@@ -614,8 +620,11 @@ nav.nav-transparent .btn-icon:hover{border-color:rgba(248,245,255,0.4);color:#ff
 <!-- ===== Cover Page ===== -->
 <section class="cover-page" id="cover">
   <div class="cover-bg"></div>
+  <div class="cover-veil" aria-hidden="true"></div>
   <canvas id="coverSky" aria-hidden="true"></canvas>
   <canvas id="coverClouds" aria-hidden="true"></canvas>
+  <div class="cover-bloom" aria-hidden="true"></div>
+  <div class="cover-flash" aria-hidden="true"></div>
   <canvas id="warpCanvas"></canvas>
   <div class="cover-fallback">
     <span class="cf-name">QIANGYI LI</span>
@@ -1754,8 +1763,11 @@ syncNav();
 
   var COLORS = ['255,208,138', '255,154,64', '255,116,52', '255,236,196'];
   var embers = [], ash = [];
+  var IG_DEFAULT = { front: 1.25, ignite: 0, boost: 0 };
+  function igBoost() { var s = window.__coverIgnite || IG_DEFAULT; return s.boost || 0; }
 
   function makeEmber(atHorizon) {
+    var boost = igBoost();
     var hz = horizonUp();
     var y = atHorizon ? H * (1 - hz) + (Math.random() - 0.35) * H * 0.12
                       : H * (1 - hz) - Math.random() * H * 0.55;
@@ -1764,10 +1776,10 @@ syncNav();
       x: Math.random() * W,
       y: y,
       vx: (Math.random() - 0.5) * 26 * dpr,
-      vy: -(16 + Math.random() * 46) * dpr,
-      r: (0.8 + Math.random() * 1.9) * dpr,
+      vy: -(16 + Math.random() * 46) * dpr * (1 + 0.9 * boost),
+      r: (0.8 + Math.random() * 1.9) * dpr * (1 + 0.35 * boost),
       life: 0,
-      ttl: 3.2 + Math.random() * 4.0,
+      ttl: (3.2 + Math.random() * 4.0) * (1 - 0.35 * boost),
       phase: Math.random() * Math.PI * 2,
       flick: 4 + Math.random() * 9,
       color: COLORS[(Math.random() * COLORS.length) | 0]
@@ -1821,7 +1833,7 @@ syncNav();
       var fade = p < 0.18 ? p / 0.18 : (1 - Math.pow((p - 0.18) / 0.82, 1.6));
       if (fade <= 0) continue;
       var flick = 0.72 + 0.28 * Math.sin(e.life * e.flick + e.phase);
-      var al = Math.max(0, Math.min(1, fade * flick));
+      var al = Math.max(0, Math.min(1, fade * flick * (1 + 0.35 * igBoost())));
       var r = e.r * (1 - p * 0.55) * 5.5;
       var g = ctx.createRadialGradient(e.x, e.y, 0, e.x, e.y, r);
       g.addColorStop(0, 'rgba(' + e.color + ',' + (al * 0.9) + ')');
@@ -1890,6 +1902,9 @@ syncNav();
     'uniform vec2 iMouse;',
     'uniform float uIntensity;',
     'uniform float uHorizon;',
+    'uniform vec2 uWarp;',
+    'uniform float uFront;',
+    'uniform float uIgnite;',
     'varying vec2 vUv;',
     'float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453123); }',
     'float noise(vec2 p){',
@@ -1907,17 +1922,24 @@ syncNav();
     '  float t = iTime;',
     '  float nearH = exp(-abs(uv.y - uHorizon) * 7.0);',
     '  vec2 suv = uv;',
-    '  suv.x += sin(uv.y * 40.0 + t * 1.6) * 0.0022 * nearH;',
-    '  vec2 p = vec2(suv.x * aspect * 1.15 + t * 0.030, suv.y * 3.30 - t * 0.011);',
+    '  suv.x += sin(uv.y * 40.0 + t * 1.6) * 0.0022 * nearH * (1.0 + 2.4 * uIgnite);',
+    '  vec2 p = vec2(suv.x * aspect * 1.15 + t * 0.052, suv.y * 3.30 - t * 0.016);',
     '  p += iMouse * 0.06;',
-    '  float w = fbm3(p * 0.62 + 3.1);',
+    '  p.y -= 0.18 * uIgnite * nearH;',
+    '  float w = fbm3(p * 0.62 + 3.1 + uWarp);',
     '  vec2 q = p + vec2(w * 1.5, fbm3(p + vec2(4.2,1.3)) * 1.15);',
     '  float d = fbm4(q);',
     '  d = smoothstep(0.30, 0.94, d);',
     '  d = pow(d, 1.42);',
+    '  vec2 sunUv = vec2(0.60, uHorizon + 0.22);',
+    '  float r = length((uv - sunUv) * vec2(1.0, 1.35));',
+    '  float front = (uFront - 0.15) * 1.45 + (w - 0.5) * 0.26;',
+    '  float lit = 1.0 - smoothstep(front - 0.09, front + 0.04, r);',
+    '  float edge = exp(-pow((r - front) / 0.085, 2.0)) * smoothstep(0.10, 0.50, d);',
+    '  d *= lit;',
     '  float bb = (uv.y - (uHorizon + 0.20)) * 3.6;',
     '  float band = exp(-bb * bb);',
-    '  float fire = clamp(d * (0.16 + 1.10 * band) * uIntensity, 0.0, 1.55);',
+    '  float fire = clamp(d * (0.16 + 1.10 * band) * uIntensity * (1.0 + 0.40 * uIgnite), 0.0, 1.55);',
     '  vec3 c1 = vec3(0.45,0.05,0.09);',
     '  vec3 c2 = vec3(0.96,0.26,0.05);',
     '  vec3 c3 = vec3(1.00,0.54,0.12);',
@@ -1925,13 +1947,14 @@ syncNav();
     '  vec3 col = mix(c1, c2, smoothstep(0.05, 0.40, fire));',
     '  col = mix(col, c3, smoothstep(0.45, 0.92, fire));',
     '  col = mix(col, c4, smoothstep(1.05, 1.55, fire));',
+    '  col += vec3(1.0, 0.93, 0.80) * edge * (0.45 + 0.55 * uIgnite) * 1.15;',
     '  vec2 sun = vec2(0.60, uHorizon + 0.22);',
     '  float sd = length((uv - sun) * vec2(1.0, 1.5));',
     '  float pulse = 0.90 + 0.10 * sin(t * 0.9);',
-    '  col += vec3(1.0,0.74,0.38) * exp(-sd * 5.4) * 0.42 * pulse;',
+    '  col += vec3(1.0,0.74,0.38) * exp(-sd * 5.4) * 0.42 * pulse * (0.20 + 0.80 * lit);',
     '  float sky = smoothstep(uHorizon - 0.10, uHorizon + 0.20, uv.y);',
     '  sky *= 1.0 - 0.62 * smoothstep(0.66, 1.0, uv.y);',
-    '  float alpha = clamp(fire * sky, 0.0, 1.0) * 0.66;',
+    '  float alpha = clamp(fire * sky, 0.0, 1.0) * (0.66 + 0.16 * uIgnite);',
     '  fragColor = vec4(col, alpha);',
     '}',
     'void main(){ vec4 c; mainImage(c, gl_FragCoord.xy); gl_FragColor = c; }'
@@ -1968,10 +1991,11 @@ syncNav();
 
   function U(n) { return gl.getUniformLocation(prog, n); }
   var uTime = U('iTime'), uRes = U('iResolution'), uMouse = U('iMouse'),
-      uIntensity = U('uIntensity'), uHorizon = U('uHorizon');
+      uIntensity = U('uIntensity'), uHorizon = U('uHorizon'),
+      uWarp = U('uWarp'), uFront = U('uFront'), uIgnite = U('uIgnite');
 
   var mouse = { x: 0.5, y: 0.5 }, smooth = { x: 0.5, y: 0.5 };
-  var W = 2, H = 2, raf = 0, visible = true, lastDraw = 0;
+  var W = 2, H = 2, raf = 0, visible = true, lastDraw = 0, baseIntensity = 1.05;
   var FRAME_MS = 1000 / 30;
 
   function horizonFor(aspect) {
@@ -1989,6 +2013,7 @@ syncNav();
     gl.viewport(0, 0, W, H);
     if (uRes) gl.uniform2f(uRes, W, H);
     if (uHorizon) gl.uniform1f(uHorizon, horizonFor(window.innerWidth / Math.max(1, window.innerHeight)));
+    baseIntensity = window.innerWidth < 900 ? 0.72 : 1.05;
   }
 
   function render(t) {
@@ -1996,11 +2021,15 @@ syncNav();
     smooth.x = smooth.x * 0.93 + mouse.x * 0.07;
     smooth.y = smooth.y * 0.93 + mouse.y * 0.07;
     if (uMouse) gl.uniform2f(uMouse, smooth.x, smooth.y);
+    if (uIntensity) gl.uniform1f(uIntensity, baseIntensity * (1 + 0.05 * Math.sin(t * 0.37)));
+    if (uWarp) gl.uniform2f(uWarp, Math.sin(t * 0.11) * 0.22, Math.cos(t * 0.09) * 0.16);
+    var ig = window.__coverIgnite;
+    if (uFront) gl.uniform1f(uFront, ig ? ig.front : 1.25);
+    if (uIgnite) gl.uniform1f(uIgnite, ig ? ig.ignite : 0);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
 
   resize();
-  if (uIntensity) gl.uniform1f(uIntensity, window.innerWidth < 900 ? 0.72 : 1.05);
 
   if (finePointer) {
     window.addEventListener('mousemove', function(e) {
@@ -2025,6 +2054,86 @@ syncNav();
   document.addEventListener('visibilitychange', function() { if (!document.hidden) start(); });
   start();
 })();
+// ===== 封面点火时间轴：深蓝夜空 -> 火线自太阳漫开 -> 峰值泛光 -> 稳定流动 =====
+(function() {
+  var root = document.documentElement;
+  var IG_DEFAULT = { front: 1.25, ignite: 0, boost: 0 };
+  var state = { front: 1.25, ignite: 0, boost: 0, active: false };
+  window.__coverIgnite = state;
+
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var lowq = !!window.__LOWQ;
+  var mobile = window.innerWidth < 900;
+  var raf = 0, t0 = 0, started = false;
+  var total = 2.6 * (lowq ? 0.6 : (mobile ? 0.85 : 1));   // 时间轴实际时长（秒）
+  var scale = 2.6 / total;                                 // 真实时间 -> 标准曲线时间
+  var DELAY = 0.55;                                        // 姓名擦出 0.20s 起，点火再晚 0.35s
+  var bloomK = lowq ? 0 : (mobile ? 0.7 : 1);
+  var flashK = lowq ? 0 : (mobile ? 0.6 : 1);
+  var boostK = lowq ? 0.5 : (mobile ? 0.5 : 1);
+
+  // 与着色器同一套换算：CSS 光晕必须落在着色器太阳上（底图 1500x1200，地平线 0.35 自下往上）
+  function sunPos() {
+    var aspect = window.innerWidth / Math.max(1, window.innerHeight);
+    var imgAR = 1500 / 1200, hz = 0.35;
+    if (aspect > imgAR) { var vis = imgAR / aspect, y0 = (1 - vis) / 2; hz = (hz - y0) / vis; }
+    root.style.setProperty('--sun-x', '60%');
+    root.style.setProperty('--sun-y', (100 * (1 - (hz + 0.22))).toFixed(2) + '%');
+  }
+
+  function smoothstep(a, b, x) {
+    var p = Math.min(1, Math.max(0, (x - a) / (b - a)));
+    return p * p * (3 - 2 * p);
+  }
+
+  function apply(t) {
+    var tf = Math.min(1, t / 1.30);
+    state.front = 1.25 * (1 - Math.pow(1 - tf, 2.2));
+    state.ignite = smoothstep(0, 0.6, t) * (1 - smoothstep(0.9, 2.4, t));
+    state.boost = boostK * smoothstep(0.3, 1.0, t) * (1 - smoothstep(1.6, 3.2, t));
+    root.style.setProperty('--veil', (1 - smoothstep(0.15, 1.25, t)).toFixed(3));
+    root.style.setProperty('--bloom', smoothstep(0, 1.25, t).toFixed(3));
+    root.style.setProperty('--bloom-a',
+      (bloomK * 0.85 * smoothstep(0.05, 0.5, t) * (1 - 0.7 * smoothstep(1.3, 2.4, t))).toFixed(3));
+    root.style.setProperty('--flash',
+      (flashK * 0.55 * Math.exp(-Math.pow((t - 1.05) / 0.16, 2))).toFixed(3));
+  }
+
+  function finish() {
+    state.front = 1.25; state.ignite = 0; state.boost = 0; state.active = false;
+    root.style.setProperty('--veil', '0');
+    root.style.setProperty('--bloom', '1');
+    root.style.setProperty('--bloom-a', '0');
+    root.style.setProperty('--flash', '0');
+  }
+  window.__finishCoverIgnition = function() {
+    started = false;
+    if (raf) { cancelAnimationFrame(raf); raf = 0; }
+    finish();
+  };
+
+  function frame(now) {
+    if (!started) { raf = 0; return; }
+    if (!t0) t0 = now;
+    var t = ((now - t0) / 1000 - DELAY) * scale;
+    if (t >= 2.6) { started = false; raf = 0; finish(); return; }
+    if (t > 0) apply(t);
+    raf = requestAnimationFrame(frame);
+  }
+
+  window.__startCoverIgnition = function() {
+    if (started || reduceMotion || !window.requestAnimationFrame) return;
+    started = true; t0 = 0; state.active = true;
+    state.front = 0; state.ignite = 0; state.boost = 0;   // 等待期天空必须是未点燃的暗场
+    root.style.setProperty('--veil', '1');    // 夜空幕先就位，等待期也保持暗场
+    root.style.setProperty('--bloom-a', '0');
+    raf = requestAnimationFrame(frame);
+  };
+
+  sunPos();
+  window.addEventListener('resize', sunPos);
+})();
+
 // ===== WarpText (WebGL2 fragment shader, zero-dependency port) =====
 // Renders text with mouse lens magnification (idle-stable), ripple, chromatic aberration
 (function() {
@@ -3518,6 +3627,7 @@ function TankBattleGame() {
     lifted = true;
     if (window.__LOWQ) root.classList.add('lowq');
     root.classList.add('reveal-cover');
+    if (window.__startCoverIgnition) window.__startCoverIgnition();
     requestAnimationFrame(function() { root.classList.add('intro-lift'); });
     window.setTimeout(doneCurtain, 760);
   }
@@ -3559,6 +3669,7 @@ function TankBattleGame() {
     if (!e.persisted) return;
     root.classList.remove('intro', 'intro-lift');
     root.classList.add('intro-done');
+    if (window.__finishCoverIgnition) window.__finishCoverIgnition();
     var c = document.querySelector('.intro-curtain');
     if (c && c.parentNode) c.parentNode.removeChild(c);
     heroEnter();
